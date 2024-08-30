@@ -1,0 +1,10 @@
+[package]
+name = "base_rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[profile.dev]
+debug = 0
+opt-level = 3
