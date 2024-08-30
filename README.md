@@ -11,6 +11,7 @@ Necessary settings file `./.vscode/settings.json` for reproduction file is put w
     },
 }
 ```
+This is valid only when pushing Debug on the above on the code. It means it is impossible when you use debugger with `launch.json` settings.
 
 ## Reproduction Steps
 
