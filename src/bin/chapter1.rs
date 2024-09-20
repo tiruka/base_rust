@@ -1,5 +1,4 @@
 use std::cell::Cell;
-use std::collections::btree_map::IterMut;
 use std::collections::VecDeque;
 use std::sync::{Condvar, Mutex};
 use std::thread;
@@ -15,10 +14,8 @@ fn f(a: &Cell<i32>, b: &Cell<i32>) {
     let after = a.get();
     if before != after {
         // this part may happen. a, bが同じものなら、b.setによって、aが変わるから。
-
     }
 }
-
 
 fn test_mutex() {
     let n = Mutex::new(0);
@@ -39,19 +36,17 @@ fn test_condvar() {
     let queue = Mutex::new(VecDeque::new());
     let not_empty = Condvar::new();
     thread::scope(|s| {
-        s.spawn(|| {
-            loop {
-              let mut q = queue.lock().unwrap();
-              let item = loop {
+        s.spawn(|| loop {
+            let mut q = queue.lock().unwrap();
+            let item = loop {
                 if let Some(item) = q.pop_front() {
                     break item;
                 } else {
                     q = not_empty.wait(q).unwrap();
                 }
-              };
-              drop(q);
-              dbg!(item);
-            }
+            };
+            drop(q);
+            dbg!(item);
         });
         for i in 0.. {
             queue.lock().unwrap().push_back(i);
@@ -62,7 +57,7 @@ fn test_condvar() {
 }
 
 // つづきは1.7.3
-fn main(){
+fn main() {
     test_mutex();
     test_condvar();
 }
