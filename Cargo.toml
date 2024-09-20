@@ -2,3 +2,7 @@
 name = "base_rust"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "chapter"
+path = "src/bin/chapter1.rs"
