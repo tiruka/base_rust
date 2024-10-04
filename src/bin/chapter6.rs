@@ -1,4 +1,5 @@
 use std::{
+    cell::UnsafeCell,
     ops::Deref,
     ptr::NonNull,
     sync::atomic::{fence, AtomicUsize},
@@ -7,11 +8,16 @@ use std::{
 fn main() {}
 
 struct ArcData<T> {
-    ref_count: AtomicUsize,
-    data: T,
+    data_ref_count: AtomicUsize,
+    alloc_ref_count: AtomicUsize,
+    data: UnsafeCell<Option<T>>,
 }
 
 pub struct MyArc<T> {
+    weak: Weak<T>,
+}
+
+pub struct Weak<T> {
     ptr: NonNull<ArcData<T>>,
 }
 
@@ -26,29 +32,23 @@ pub struct MyArc<T> {
 unsafe impl<T: Send + Sync> Send for MyArc<T> {}
 unsafe impl<T: Send + Sync> Sync for MyArc<T> {}
 
-impl<T> MyArc<T> {
-    pub fn new(data: T) -> MyArc<T> {
-        MyArc {
-            ptr: NonNull::from(Box::leak(Box::new(ArcData {
-                ref_count: AtomicUsize::new(1),
-                data,
-            }))),
-        }
-    }
+unsafe impl<T: Send + Sync> Send for Weak<T> {}
+unsafe impl<T: Send + Sync> Sync for Weak<T> {}
+impl<T> Weak<T> {
     fn data(&self) -> &ArcData<T> {
         unsafe { self.ptr.as_ref() }
     }
-    pub fn get_mut(arc: &mut Self) -> Option<&mut T> {
-        if arc
-            .data()
-            .ref_count
-            .load(std::sync::atomic::Ordering::Relaxed)
-            == 1
-        {
-            fence(std::sync::atomic::Ordering::Acquire);
-            unsafe { Some(&mut arc.ptr.as_mut().data) }
-        } else {
-            None
+}
+impl<T> MyArc<T> {
+    pub fn new(data: T) -> MyArc<T> {
+        MyArc {
+            weak: Weak {
+                ptr: NonNull::from(Box::leak(Box::new(ArcData {
+                    data_ref_count: AtomicUsize::new(1),
+                    alloc_ref_count: AtomicUsize::new(1),
+                    data: UnsafeCell::new(Some(data)),
+                }))),
+            },
         }
     }
 }
@@ -56,16 +56,22 @@ impl<T> MyArc<T> {
 impl<T> Deref for MyArc<T> {
     type Target = T;
     fn deref(&self) -> &T {
-        &self.data().data
+        let ptr = self.weak.data().data.get();
+        unsafe { (*ptr).as_ref().unwrap() }
     }
 }
 
-impl<T> Clone for MyArc<T> {
+impl<T> Clone for Weak<T> {
     fn clone(&self) -> Self {
-        self.data()
-            .ref_count
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        MyArc { ptr: self.ptr }
+        if self
+            .data()
+            .data_ref_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            > usize::MAX / 2
+        {
+            std::process::abort();
+        }
+        Weak { ptr: self.ptr }
     }
 }
 
@@ -73,7 +79,7 @@ impl<T> Drop for MyArc<T> {
     fn drop(&mut self) {
         if self
             .data()
-            .ref_count
+            .data_ref_count
             .fetch_sub(1, std::sync::atomic::Ordering::Release)
             == 1
         {
