@@ -33,11 +33,13 @@ fn main() {
     // [0, 0, 0, 0]]
 
     // おそらく、下記のscatterがbug
-    // let r = zeros.scatter(1, indices, values);
-    // println!("#result: {}", r.to_data());
+    // original let r = zeros.scatter(1, indices, values);
+    // dimを0にしたら、うまくいった。
+    let r = zeros.scatter(0, indices, values);
+    println!("#result: {}", r);
 
     // one hot from tensor/api/float.rs こっちは動く。
     // let one_hot = Tensor::<Backend, 1>::one_hot(2, 10, &device);
-    // println!("{}", one_hot.to_data());
+    // println!("#float one hot: {}", one_hot);
     // [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 }
