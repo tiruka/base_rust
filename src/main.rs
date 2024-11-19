@@ -12,19 +12,29 @@ fn main() {
     // 本来動くべきコード torch.nn.functional.one_hotに近い。
     // let one_hot = original_data.one_hot(4);
     // println!("{}", one_hot);
-    // [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+    // 期待するのは、下記
+    //[[1, 0, 0, 0],
+    // [0, 1, 0, 0],
+    // [0, 0, 1, 0],
+    // [0, 0, 0, 1]]
     // one_hotの中身を持ってきて、検証する。
     let [num_samples] = original_data.dims();
-    println!("#num_samples: {}\n", &num_samples);
+    println!("#num_samples: {}\n", &num_samples); // 4
     let indices: Tensor<Backend, 2, Int> = original_data.unsqueeze();
-    println!("#indices: {}\n", indices);
+    println!("#indices: {}\n", indices); // [[0, 1, 2, 3]],
     let values: Tensor<Backend, 2, Int> = indices.ones_like();
-    println!("#values: {}\n", values);
-    let zeros: Tensor<Backend, 2, Int> = Tensor::zeros([4, 4], &indices.device());
+    println!("#values: {}\n", values); // [[1, 1, 1, 1]],
+    let zeros: Tensor<Backend, 2, Int> =
+        Tensor::zeros([num_samples, num_samples], &indices.device());
     println!("#zeros: {}\n", zeros);
+    // [[0, 0, 0, 0],
+    // [0, 0, 0, 0],
+    // [0, 0, 0, 0],
+    // [0, 0, 0, 0]]
+
     // おそらく、下記のscatterがbug
-    let r = zeros.scatter(1, indices, values);
-    println!("#result: {}", r.to_data());
+    // let r = zeros.scatter(1, indices, values);
+    // println!("#result: {}", r.to_data());
 
     // one hot from tensor/api/float.rs こっちは動く。
     // let one_hot = Tensor::<Backend, 1>::one_hot(2, 10, &device);
