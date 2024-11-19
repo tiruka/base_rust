@@ -6,6 +6,8 @@ fn main() {
     let device = Default::default();
     // one hot from tensor/api/int.rs
     let original_data: Tensor<Backend, 1, Int> = Tensor::from_ints([0, 1, 2, 3], &device);
+    // let original_data: Tensor<Backend, 1, Int> = Tensor::from_ints([0, 1, 2, 0, 4], &device);
+
     println!("original_data: {}\n", original_data.to_data());
     // [0, 1, 2, 3]
 
@@ -34,7 +36,7 @@ fn main() {
 
     // おそらく、下記のscatterがbug
     // original let r = zeros.scatter(1, indices, values);
-    // dimを0にしたら、うまくいった。
+    // dimを0にしたら、うまくいった。dim = 0のときは、行方向に入れ替えていくので、納得である。
     let r = zeros.scatter(0, indices, values);
     println!("#result: {}", r);
 
