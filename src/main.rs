@@ -11,7 +11,7 @@ fn main() {
 
     // 本来動くべきコード torch.nn.functional.one_hotに近い。
     // let one_hot = original_data.one_hot(4);
-    // println!("{}", one_hot.to_data());
+    // println!("{}", one_hot);
     // [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
     // one_hotの中身を持ってきて、検証する。
     let [num_samples] = original_data.dims();
@@ -22,8 +22,9 @@ fn main() {
     println!("#values: {}\n", values);
     let zeros: Tensor<Backend, 2, Int> = Tensor::zeros([4, 4], &indices.device());
     println!("#zeros: {}\n", zeros);
-    // let r = zeros.scatter(1, indices, values);
-    // println!("#result: {}", r.to_data());
+    // おそらく、下記のscatterがbug
+    let r = zeros.scatter(1, indices, values);
+    println!("#result: {}", r.to_data());
 
     // one hot from tensor/api/float.rs こっちは動く。
     // let one_hot = Tensor::<Backend, 1>::one_hot(2, 10, &device);
