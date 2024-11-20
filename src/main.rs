@@ -37,6 +37,7 @@ fn main() {
     // おそらく、下記のscatterがbug
     // original let r = zeros.scatter(1, indices, values);
     // dimを0にしたら、うまくいった。dim = 0のときは、行方向に入れ替えていくので、納得である。
+    // https://github.com/tracel-ai/burn/pull/2501/files で修正が入った（やり方は逆だが本質は同じ）
     let r = zeros.scatter(0, indices, values);
     println!("#result: {}", r);
 
