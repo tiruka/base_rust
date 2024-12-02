@@ -1,7 +1,6 @@
 use burn::backend::NdArray;
 use burn::tensor::{Int, Tensor};
 type Backend = NdArray;
-
 fn main() {
     let device = Default::default();
     // one hot from tensor/api/int.rs
