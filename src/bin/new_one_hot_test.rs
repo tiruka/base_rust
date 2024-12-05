@@ -45,12 +45,13 @@ fn main() {
     let valid_indices = indices.mask_fill(valid_mask, 0);
     println!("valid indices\n{:?}\n#######", &valid_indices);
 
-    let mut dim = 0;
-    if axis == -1 {
-        let dim = valid_indices.dims().len();
+    let dim = if axis == -1 {
+        valid_indices.dims().len() // 次元数を取得
     } else if axis == 0 {
-        let dim = 0;
-    }
+        0
+    } else {
+        panic!("Invalid axis.");
+    };
     let indices_unsuqueezed = valid_indices.unsqueeze_dim(dim);
     println!(
         "indices_unsuqueezed #######\n{:?}\n#######",
@@ -61,10 +62,11 @@ fn main() {
     let result: Tensor<B, 3, Int> = Tensor::full(shape.clone(), off_value, &device);
     println!("original result #######\n{:?}\n#######", &result);
 
+    let values_shape = result.shape();
     let result = result.scatter(
         dim,
         indices_unsuqueezed,
-        Tensor::full(shape, on_value, &device),
+        Tensor::full(values_shape, on_value, &device),
     );
 
     println!("final result #######\n{:?}\n#######", &result);
