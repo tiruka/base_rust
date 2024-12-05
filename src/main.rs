@@ -4,10 +4,10 @@ type Backend = NdArray;
 fn main() {
     let device = Default::default();
     // one hot from tensor/api/int.rs
-    let original_data: Tensor<Backend, 1, Int> = Tensor::from_ints([0, 1, 2, 3], &device);
+    let original_data: Tensor<Backend, 1, Int> = Tensor::from_ints([0, 1, 2, 2], &device);
     // let original_data: Tensor<Backend, 1, Int> = Tensor::from_ints([0, 1, 2, 0, 4], &device);
 
-    println!("original_data: {}\n", original_data.to_data());
+    println!("original_data: {}\n", &original_data);
     // [0, 1, 2, 3]
 
     // 本来動くべきコード torch.nn.functional.one_hotに近い。
@@ -23,6 +23,8 @@ fn main() {
     println!("#num_samples: {}\n", &num_samples); // 4
     let indices: Tensor<Backend, 2, Int> = original_data.unsqueeze();
     println!("#indices: {}\n", indices); // [[0, 1, 2, 3]],
+    let indices2 = indices.clone().unsqueeze::<4>();
+    println!("#indices2 : {}\n", indices2); // [[0, 1, 2, 3]],
     let values: Tensor<Backend, 2, Int> = indices.ones_like();
     println!("#values: {}\n", values); // [[1, 1, 1, 1]],
     let zeros: Tensor<Backend, 2, Int> =
