@@ -1,4 +1,7 @@
 #![allow(unused)]
+use std::result;
+use std::slice::RSplit;
+
 use burn::backend::NdArray;
 use burn::serde::de;
 use burn::tensor::{Int, Tensor};
@@ -34,13 +37,33 @@ fn main() {
     let condition2 = indices.clone().lower_elem(depth as i64).int();
     println!("conditon 1\n{:?}\n#######", &condition1);
     println!("conditon 2\n{:?}\n#######", &condition2);
-    // 論理AND: valid_mask
+    // 論理AND: valid_mask 乗算 (1 * 1 = 1, 他は0), さらにそれを反転させる。1のところは、そのままにしたいので。
     let valid_mask = condition1.mul(condition2).bool().bool_not();
     println!("valid mask\n{:?}\n#######", &valid_mask);
 
     // 0未満、depth以上のデータを排除した、valid indicesを作る
     let valid_indices = indices.mask_fill(valid_mask, off_value);
     println!("valid indices\n{:?}\n#######", &valid_indices);
+
+    // ここから、outputを作成する 型指定をしているけど、自動でどうにかなるはず。
+    let result: Tensor<B, 3, Int> = Tensor::full(shape.clone(), on_value, &device);
+    println!("original result\n{:?}\n#######", &result);
+
+    let mut dim = 0;
+    if axis == -1 {
+        let dim = valid_indices.dims().len();
+    } else if axis == 0 {
+        let dim = 0;
+    }
+    let indices_unsuqueezed = valid_indices.unsqueeze_dim(dim);
+    println!("indices_unsuqueezed\n{:?}\n#######", &indices_unsuqueezed);
+    let result = result.scatter(
+        dim,
+        indices_unsuqueezed,
+        Tensor::full(shape, on_value, &device),
+    );
+
+    println!("final result\n{:?}\n#######", &result);
 
     // Create a zero tensor and scatter on_value
     // let output = off_tensor.scatter(actual_axis, indices_expanded, on_tensor);
