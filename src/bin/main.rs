@@ -1,3 +1,5 @@
+extern crate base_rust;
+use base_rust::ThreadPool;
 use std::fs::File;
 use std::io::prelude::Read;
 use std::io::Write;
@@ -6,9 +8,12 @@ use std::thread;
 use std::time::Duration;
 fn main() {
     let lisnter = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let pool = ThreadPool::new(4);
     for stream in lisnter.incoming() {
         let stream = stream.unwrap();
-        handle_connection(stream);
+        pool::execute(|| {
+            handle_connection(stream);
+        });
     }
 }
 
