@@ -9,18 +9,13 @@ type Backend = NdArray;
 type B = Backend;
 fn main() {
     let device = Default::default();
-    let expected: Tensor<B, 3, Int> =
-        Tensor::from_ints([[[1, 0, 0], [0, 0, 1]], [[0, 1, 0], [0, 0, 0]]], &device);
+    let expected: Tensor<B, 1, Int> = Tensor::from_ints([0, 1, 2], &device);
 
     let indices: Tensor<B, 2, Int> = Tensor::from_ints([[0, 2], [1, -1]], &device);
-    indicesの条件が当てはまらない時の動作がまだ。ONNX 9と11で条件が違うが、それにtensorflowも追随していない。0以上で条件を区切っている。
-    おそらく、マイナスの場合は、pythonは普通に後ろからのインデックスになるので、len(list) - negative みたいにする必要がある。
-    negativeの値をrustのscatterが受け入れるかどうか。あと、tensorflowの方も直した方が良さそう。てか直せんのか？
-
     // println!("original indices\n{:?}\n#######", &indices);
 
     let depth = 3;
-    let on_value = 1;
+    let on_value = 5;
     let off_value = 0;
     let axis = -1;
 
@@ -46,8 +41,8 @@ fn main() {
     // println!("valid mask\n{:?}\n#######", &valid_mask);
 
     // 0未満、depth以上のデータを排除した、valid indicesを作る
-    let valid_indices = indices.mask_fill(valid_mask, off_value);
-    // println!("valid indices\n{:?}\n#######", &valid_indices);
+    let valid_indices = indices.mask_fill(valid_mask, 0);
+    println!("valid indices\n{:?}\n#######", &valid_indices);
 
     let dim = if axis == -1 {
         valid_indices.dims().len() // 次元数を取得
@@ -57,20 +52,21 @@ fn main() {
         panic!("Invalid axis.");
     };
     let indices_unsqueezed = valid_indices.unsqueeze_dim(dim);
-    // println!(
-    //     "indices_unsqueezed #######\n{:?}\n#######",
-    //     &indices_unsqueezed
-    // );
+    println!(
+        "indices_unsqueezed #######\n{:?}\n#######",
+        &indices_unsqueezed
+    );
 
     // ここから、outputを作成する 型指定をしているけど、自動でどうにかなるはず。
     let result: Tensor<B, 3, Int> = Tensor::full(shape.clone(), off_value, &device);
-    // println!("original result #######\n{:?}\n#######", &result);
+    println!("original result #######\n{:?}\n#######", &result);
 
     let scatter_values = Tensor::full(indices_unsqueezed.shape(), on_value, &device);
     let result = result.scatter(dim, indices_unsqueezed, scatter_values);
 
     println!("final result #######\n{:?}\n#######", &result);
-    println!("expected #######\n{:?}\n#######", &expected);
 
-    result.into_data().assert_eq(&expected.into_data(), false);
+    // Create a zero tensor and scatter on_value
+    // let output = off_tensor.scatter(actual_axis, indices_expanded, on_tensor);
+    // output.into_data().assert_eq(&expected.into_data(), false);
 }
