@@ -11,7 +11,7 @@ fn main() {
     let pool = ThreadPool::new(4);
     for stream in lisnter.incoming() {
         let stream = stream.unwrap();
-        pool::execute(|| {
+        pool.execute(|| {
             handle_connection(stream);
         });
     }
