@@ -27,8 +27,8 @@ fn main() {
     // println!("original indices\n{:?}\n#######", &indices);
 
     let depth = 10;
-    let on_value = 3;
-    let off_value = 1;
+    let on_value = 3.0;
+    let off_value = 1.0;
     let mut axis: i64 = 1;
 
     let mut shape = indices.shape().dims::<1>().to_vec();
@@ -79,10 +79,12 @@ fn main() {
     let result: Tensor<B, 2, Int> = Tensor::full(shape.clone(), off_value, &device);
     println!("original result #######\n{:?}\n#######", &result);
 
-    let scatter_values = Tensor::full(indices_unsqueezed.shape(), on_value, &device);
-    println!("####### scatter_values #######\n{:?}\n", &scatter_values);
-    let result = result.scatter(axis as usize, indices_unsqueezed, scatter_values);
+    let scatter_on_values = Tensor::full(indices_unsqueezed.shape(), on_value, &device);
+    let scatter_off_values = Tensor::full(indices_unsqueezed.shape(), -1. * off_value, &device);
 
+    let result = result
+        .scatter(axis as usize, indices_unsqueezed.clone(), scatter_on_values)
+        .scatter(axis as usize, indices_unsqueezed, scatter_off_values);
     println!("####### final result #######\n{:?}\n", &result);
     println!("####### expected #######\n{:?}\n", &expected);
 

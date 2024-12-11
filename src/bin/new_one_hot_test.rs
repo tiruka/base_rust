@@ -73,10 +73,14 @@ fn main() {
     // ここから、outputを作成する 型指定をしているけど、自動でどうにかなるはず。
     let result: Tensor<B, 3, Int> = Tensor::full(shape.clone(), off_value, &device);
     // println!("original result #######\n{:?}\n#######", &result);
+    let scatter_on_values = Tensor::full(indices_unsqueezed.shape(), on_value, &device);
+    let scatter_off_values = Tensor::full(indices_unsqueezed.shape(), -1 * off_value, &device);
 
-    let scatter_values = Tensor::full(indices_unsqueezed.shape(), on_value, &device);
-    let result = result.scatter(axis as usize, indices_unsqueezed, scatter_values);
-
+    let result = result
+        .scatter(axis as usize, indices_unsqueezed.clone(), scatter_on_values)
+        .scatter(axis as usize, indices_unsqueezed, scatter_off_values);
+    println!("####### final result #######\n{:?}\n", &result);
+    println!("####### expected #######\n{:?}\n", &expected);
     println!("####### final result #######\n{:?}\n", &result);
     println!("####### expected #######\n{:?}\n", &expected);
 
