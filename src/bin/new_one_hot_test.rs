@@ -28,13 +28,16 @@ fn main() {
     // pesude one hot function.2ではなくDが入る想定
     let mut shape = indices.shape().dims::<2>().to_vec();
     // println!("shape: {:?}\n#######", shape);
-    if axis == -1 {
-        shape.push(depth);
-    } else if axis == 0 {
-        shape.insert(0, depth);
+    let rank = indices.dims().len();
+    let axis = if axis < 0 {
+        axis + rank as i64 + 1 // Convert negative axis to positive index
     } else {
-        panic!("Only axis=-1 or axis=0 are supported.");
+        axis
+    };
+    if axis < 0 || axis > rank as i64 {
+        panic!("Axis out of range. Accepted range is [-r-1, r] where r = rank(indices).");
     }
+    shape.insert(axis as usize, depth);
     // 条件1: indices >= 0
     let condition1 = indices.clone().greater_elem(-1 * depth as i64).int();
 
@@ -61,14 +64,7 @@ fn main() {
     let valid_indices = adjusted_indices.mask_fill(valid_mask, off_value);
     println!("#######valid indices\n{:?}\n", &valid_indices);
 
-    let dim = if axis == -1 {
-        valid_indices.dims().len() // 次元数を取得
-    } else if axis == 0 {
-        0
-    } else {
-        panic!("Invalid axis.");
-    };
-    let indices_unsqueezed = valid_indices.unsqueeze_dim(dim);
+    let indices_unsqueezed = valid_indices.unsqueeze_dim(axis as usize);
     // println!(
     //     "indices_unsqueezed #######\n{:?}\n#######",
     //     &indices_unsqueezed
@@ -79,7 +75,7 @@ fn main() {
     // println!("original result #######\n{:?}\n#######", &result);
 
     let scatter_values = Tensor::full(indices_unsqueezed.shape(), on_value, &device);
-    let result = result.scatter(dim, indices_unsqueezed, scatter_values);
+    let result = result.scatter(axis as usize, indices_unsqueezed, scatter_values);
 
     println!("####### final result #######\n{:?}\n", &result);
     println!("####### expected #######\n{:?}\n", &expected);
