@@ -3,6 +3,7 @@ use std::result;
 use std::slice::RSplit;
 
 use burn::backend::NdArray;
+use burn::module::Module;
 use burn::serde::de;
 use burn::tensor::{Int, Tensor};
 type Backend = NdArray;
@@ -10,12 +11,12 @@ type B = Backend;
 fn main() {
     let device = Default::default();
     let expected: Tensor<B, 3, Int> =
-        Tensor::from_ints([[[1, 0, 0], [0, 0, 1]], [[0, 1, 0], [0, 0, 0]]], &device);
+        Tensor::from_ints([[[1, 0, 0], [0, 0, 1]], [[0, 1, 0], [0, 0, 1]]], &device);
 
     let indices: Tensor<B, 2, Int> = Tensor::from_ints([[0, 2], [1, -1]], &device);
-    indicesの条件が当てはまらない時の動作がまだ。ONNX 9と11で条件が違うが、それにtensorflowも追随していない。0以上で条件を区切っている。
-    おそらく、マイナスの場合は、pythonは普通に後ろからのインデックスになるので、len(list) - negative みたいにする必要がある。
-    negativeの値をrustのscatterが受け入れるかどうか。あと、tensorflowの方も直した方が良さそう。てか直せんのか？
+    // indicesの条件が当てはまらない時の動作がまだ。ONNX 9と11で条件が違うが、それにtensorflowも追随していない。0以上で条件を区切っている。
+    // おそらく、マイナスの場合は、pythonは普通に後ろからのインデックスになるので、len(list) - negative みたいにする必要がある。
+    // negativeの値をrustのscatterが受け入れるかどうか。あと、tensorflowの方も直した方が良さそう。てか直せんのか？
 
     // println!("original indices\n{:?}\n#######", &indices);
 
@@ -35,7 +36,7 @@ fn main() {
         panic!("Only axis=-1 or axis=0 are supported.");
     }
     // 条件1: indices >= 0
-    let condition1 = indices.clone().greater_equal_elem(0).int();
+    let condition1 = indices.clone().greater_elem(-1 * depth as i64).int();
 
     // 条件2: indices < depth
     let condition2 = indices.clone().lower_elem(depth as i64).int();
@@ -44,10 +45,21 @@ fn main() {
     // 論理AND: valid_mask 乗算 (1 * 1 = 1, 他は0), さらにそれを反転させる。1のところは、そのままにしたいので。
     let valid_mask = condition1.mul(condition2).bool().bool_not();
     // println!("valid mask\n{:?}\n#######", &valid_mask);
+    let condition3 = indices.clone().lower_elem(0);
 
+    let adjusted_indices = indices
+        .clone()
+        .mask_fill(indices.clone().lower_elem(0), depth as i64)
+        .add(
+            indices
+                .clone()
+                .mask_fill(indices.clone().greater_elem(0), 0),
+        );
+
+    println!("#######adjusted indices\n{:?}\n", &adjusted_indices);
     // 0未満、depth以上のデータを排除した、valid indicesを作る
-    let valid_indices = indices.mask_fill(valid_mask, off_value);
-    // println!("valid indices\n{:?}\n#######", &valid_indices);
+    let valid_indices = adjusted_indices.mask_fill(valid_mask, off_value);
+    println!("#######valid indices\n{:?}\n", &valid_indices);
 
     let dim = if axis == -1 {
         valid_indices.dims().len() // 次元数を取得
@@ -69,8 +81,8 @@ fn main() {
     let scatter_values = Tensor::full(indices_unsqueezed.shape(), on_value, &device);
     let result = result.scatter(dim, indices_unsqueezed, scatter_values);
 
-    println!("final result #######\n{:?}\n#######", &result);
-    println!("expected #######\n{:?}\n#######", &expected);
+    println!("####### final result #######\n{:?}\n", &result);
+    println!("####### expected #######\n{:?}\n", &expected);
 
     result.into_data().assert_eq(&expected.into_data(), false);
 }
