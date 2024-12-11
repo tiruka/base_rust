@@ -31,17 +31,18 @@ fn main() {
     let off_value = 1;
     let mut axis: i64 = 1;
 
-    // pesude one hot function.2ではなくDが入る想定
     let mut shape = indices.shape().dims::<1>().to_vec();
+    // println!("shape: {:?}\n#######", shape);
     let rank = indices.dims().len();
-    if axis < 0 {
-        axis += rank as i64; // Convert negative axis to positive index
-    }
+    let axis = if axis < 0 {
+        axis + rank as i64 + 1 // Convert negative axis to positive index
+    } else {
+        axis
+    };
     if axis < 0 || axis > rank as i64 {
         panic!("Axis out of range. Accepted range is [-r-1, r] where r = rank(indices).");
     }
     shape.insert(axis as usize, depth);
-    println!("##### shape\n{:?}", shape);
     // 条件1: indices >= 0
     let condition1 = indices.clone().greater_elem(-1 * depth as i64).int();
 
@@ -69,17 +70,17 @@ fn main() {
     println!("#######valid indices\n{:?}\n", &valid_indices);
 
     let indices_unsqueezed = valid_indices.unsqueeze_dim(axis as usize);
-    println!(
-        "#######indices_unsqueezed #######\n{:?}\n",
-        &indices_unsqueezed
-    );
+    // println!(
+    //     "indices_unsqueezed #######\n{:?}\n#######",
+    //     &indices_unsqueezed
+    // );
 
     // ここから、outputを作成する 型指定をしているけど、自動でどうにかなるはず。
-    let result: Tensor<B, 3, Int> = Tensor::full(shape.clone(), off_value, &device);
-    println!("#######original result #######\n{:?}\n", &result);
+    let result: Tensor<B, 2, Int> = Tensor::full(shape.clone(), off_value, &device);
+    println!("original result #######\n{:?}\n#######", &result);
 
     let scatter_values = Tensor::full(indices_unsqueezed.shape(), on_value, &device);
-    println!("#######scatter_values#######\n{:?}\n", &scatter_values);
+    println!("####### scatter_values #######\n{:?}\n", &scatter_values);
     let result = result.scatter(axis as usize, indices_unsqueezed, scatter_values);
 
     println!("####### final result #######\n{:?}\n", &result);
