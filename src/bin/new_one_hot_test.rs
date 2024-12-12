@@ -48,8 +48,6 @@ fn main() {
     // 論理AND: valid_mask 乗算 (1 * 1 = 1, 他は0), さらにそれを反転させる。1のところは、そのままにしたいので。
     let valid_mask = condition1.mul(condition2).bool().bool_not();
     // println!("valid mask\n{:?}\n#######", &valid_mask);
-    let condition3 = indices.clone().lower_elem(0);
-
     let adjusted_indices = indices
         .clone()
         .mask_fill(indices.clone().lower_elem(0), depth as i64)
