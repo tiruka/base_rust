@@ -79,9 +79,8 @@ fn main() {
     let result: Tensor<B, 2, Int> = Tensor::full(shape.clone(), off_value, &device);
     println!("original result #######\n{:?}\n#######", &result);
 
-    let scatter_on_values = Tensor::full(indices_unsqueezed.shape(), on_value, &device);
-    let scatter_off_values = Tensor::full(indices_unsqueezed.shape(), off_value, &device);
-    let scatter_on_values = scatter_on_values - scatter_off_values;
+    let scatter_on_values = Tensor::full(indices_unsqueezed.shape(), on_value, &device)
+        - Tensor::full(indices_unsqueezed.shape(), off_value, &device);
     let result = result.scatter(axis as usize, indices_unsqueezed.clone(), scatter_on_values);
 
     println!("####### final result #######\n{:?}\n", &result);
